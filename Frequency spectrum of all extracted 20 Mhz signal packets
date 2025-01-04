@@ -1,0 +1,28 @@
+# Set FFT size and sampling frequency
+N_fft = 2048
+fs = 50e6
+
+# Loop through all packets and plot frequency spectrum
+for idx, (start_idx, end_idx) in enumerate(packets, start=1):
+    # Extract corresponding signal samples for the packet
+    current_packet = data[start_idx:end_idx]
+
+    # Correct the frequency offset for the packet
+    offset, band_found = processor.estimate_offset(current_packet, sampling_rate, packet_type="droneid")
+
+    if band_found:
+        # Apply frequency shift correction using the static method of DroneSignalProcessor
+        #corrected_packet = DroneSignalProcessor.fshift(current_packet, -offset, sampling_rate)
+
+        # Calculate the FFT of the corrected packet
+        data_fft = np.fft.fftshift(np.fft.fft(corrected_packet, N_fft))
+        freqs = np.fft.fftshift(np.fft.fftfreq(N_fft, 1 / fs))
+
+        # Plot the frequency spectrum of the corrected packet
+        plt.figure(figsize=(10, 6))
+        plt.plot(freqs, np.abs(data_fft))
+        plt.xlabel('Frequency [Hz]')
+        plt.ylabel('Magnitude')
+        plt.title(f'Frequency Spectrum of Corrected Packet {idx}')
+        plt.grid(True)
+        plt.show()
