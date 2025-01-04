@@ -1,0 +1,17 @@
+# Function to calculate kurtosis using the moment-based method
+def moment_based_kurtosis(signal_packet):
+    """
+    Calculate the kurtosis of a distribution using the moment-based method.
+    The magnitude of the complex signal will be used.
+    """
+
+
+    n = len(signal_packet)
+    mean = np.mean(signal_packet)
+    std = np.std(signal_packet)
+
+    # Calculate the kurtosis (subtract 3 for excess kurtosis)
+    kurtosis = (1 / n) * np.sum(((signal_packet - mean) / std) ** 4) - 3
+
+    return kurtosis
+
