@@ -1,0 +1,15 @@
+
+
+def moment_based_skew(signal_packet):
+    n = len(signal_packet)
+    mean = np.mean(signal_packet)
+    std = np.std(signal_packet)
+
+    # Divide the formula into two parts
+    first_part = n / ((n - 1) * (n - 2))
+    second_part = np.sum(((signal_packet - mean) / std) ** 3)
+
+    skewness = first_part * second_part
+
+    return skewness
+
