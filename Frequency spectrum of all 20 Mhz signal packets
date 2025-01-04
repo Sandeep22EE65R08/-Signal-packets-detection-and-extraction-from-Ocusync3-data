@@ -1,0 +1,27 @@
+# Loop through all extracted packets, apply low-pass filter, and plot the filtered FFT
+for idx, (start_idx, end_idx) in enumerate(packets, start=1):
+    # Extract corresponding signal samples for the packet
+    current_packet = ocusync3_data[start_idx:end_idx]
+
+    # Correct the frequency offset for the packet (assuming offset is calculated previously)
+    #offset, band_found = processor.estimate_offset(current_packet, sampling_rate, packet_type="droneid")
+
+    if band_found:
+        # Apply frequency shift correction using the static method of DroneSignalProcessor
+        corrected_packet = DroneSignalProcessor.fshift(current_packet, -offset, sampling_rate)
+
+        # Apply low-pass filter to the corrected packet (e.g., 4.5 MHz cutoff)
+        filtered_packet, sos = lowpass(corrected_packet, 8.5e6, sampling_rate)
+
+        # Calculate the FFT of the filtered packet
+        data_fft = np.fft.fftshift(np.fft.fft(filtered_packet, N_fft))
+        freqs = np.fft.fftshift(np.fft.fftfreq(N_fft, 1 / fs))
+
+        # Plot the frequency spectrum of the filtered packet
+        plt.figure(figsize=(10, 6))
+        plt.plot(freqs, np.abs(data_fft))
+        plt.xlabel('Frequency [Hz]')
+        plt.ylabel('Magnitude')
+        plt.title(f'Frequency Spectrum of Filtered Packet {idx}')
+        plt.grid(True)
+        plt.show()
