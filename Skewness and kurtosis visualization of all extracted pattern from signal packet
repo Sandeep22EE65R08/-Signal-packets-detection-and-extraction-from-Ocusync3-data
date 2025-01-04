@@ -1,0 +1,66 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import skew, kurtosis
+
+# Define the custom skewness function
+def moment_based_skew(distribution):
+    n = len(distribution)
+    mean = np.mean(distribution)
+    std = np.std(distribution)
+
+    # Divide the formula into two parts
+    first_part = n / ((n - 1) * (n - 2))
+    second_part = np.sum(((distribution - mean) / std) ** 3)
+
+    skewness = first_part * second_part
+    return skewness
+
+# Define the custom kurtosis function
+def moment_based_kurtosis(distribution):
+    n = len(distribution)
+    mean = np.mean(distribution)
+    std = np.std(distribution)
+
+    kurtosis = (1 / n) * sum(((distribution - mean) / std) ** 4) - 3
+    return kurtosis
+
+# Store skewness and kurtosis values for all extracted patterns
+skewness_values = []
+kurtosis_values = []
+
+for idx, pattern in enumerate(extracted_patterns):
+    pattern_skewness = moment_based_skew(np.abs(pattern))  # Skewness of the pattern
+    pattern_kurtosis = moment_based_kurtosis(np.abs(pattern))  # Kurtosis of the pattern
+    skewness_values.append(pattern_skewness)
+    kurtosis_values.append(pattern_kurtosis)
+
+    # Print skewness and kurtosis values with interpretation
+    print(f"Pattern {idx + 1}:")
+    print(f"  Skewness: {pattern_skewness:.4f}")
+    if pattern_skewness > 0:
+        print(f"  Positive skewness: The distribution has a longer right tail.")
+    elif pattern_skewness < 0:
+        print(f"  Negative skewness: The distribution has a longer left tail.")
+    else:
+        print(f"  Zero skewness: The distribution is symmetric.")
+
+    print(f"  Kurtosis: {pattern_kurtosis:.4f}")
+    if pattern_kurtosis > 3:
+        print(f"  Positive kurtosis (Leptokurtic): The distribution has heavier tails than a normal distribution.")
+    elif pattern_kurtosis < 3:
+        print(f"  Negative kurtosis (Platykurtic): The distribution has lighter tails than a normal distribution.")
+    else:
+        print(f"  Zero kurtosis (Mesokurtic): The distribution has tails similar to a normal distribution.")
+    print()
+
+
+# KDE plot for each extracted pattern
+for idx, pattern in enumerate(extracted_patterns):
+    plt.figure(figsize=(10, 6))
+    sns.kdeplot(np.abs(pattern), shade=True)
+    plt.title(f"KDE plot of Extracted Pattern {idx + 1}")
+    plt.xlabel("Amplitude")
+    plt.ylabel("Density")
+    plt.grid(True)
+    plt.show()
