@@ -1,0 +1,52 @@
+# Parameters
+fs = 50e6  # Sampling frequency (50 MHz)
+nfft_welch = 2028  # Number of FFT points for Welch's method
+power_threshold = 0.999  # Fraction of power to consider for bandwidth (e.g., 99%)
+
+# Loop through all filtered packets
+for idx, (start_idx, end_idx) in enumerate(packets, start=1):
+    # Extract corresponding signal samples for the packet
+    current_packet = ocusync3_data[start_idx:end_idx]
+
+    # Correct the frequency offset for the packet (assuming offset is calculated previously)
+    offset, band_found = processor.estimate_offset(current_packet, fs, packet_type="droneid")
+
+    if band_found:
+        # Apply frequency shift correction using the static method of DroneSignalProcessor
+        corrected_packet = DroneSignalProcessor.fshift(current_packet, -offset, fs)
+
+        # Apply low-pass filter to the corrected packet
+        filtered_packet, sos = lowpass(corrected_packet, 8.5e6, fs)
+
+        # Ensure data length is sufficient for Welch's method
+        if len(filtered_packet) < nfft_welch:
+            print(f"Insufficient data length for Welch's method in Packet {idx}")
+        else:
+            # Apply Hamming window
+            window = hamming(len(filtered_packet))
+            data_windowed = filtered_packet * window
+
+            # Calculate PSD using Welch's method
+            f, Pxx_den = welch(data_windowed, fs, nperseg=nfft_welch, return_onesided=False)
+
+            # Shift frequency and PSD for negative frequencies
+            Pxx_den_shifted = np.fft.fftshift(Pxx_den)
+            f_shifted = np.fft.fftshift(f)
+
+            # Calculate total power and cumulative power
+            total_power = np.sum(Pxx_den_shifted)
+            cumulative_power = np.cumsum(Pxx_den_shifted)
+
+            # Find frequency indices where cumulative power crosses the thresholds
+            lower_idx = np.where(cumulative_power >= (1 - power_threshold) * total_power / 2)[0][0]
+            upper_idx = np.where(cumulative_power >= (1 + power_threshold) * total_power / 2)[0][0]
+
+            # Bandwidth is the difference between upper and lower frequencies
+            bandwidth = f_shifted[upper_idx] - f_shifted[lower_idx]
+
+            # Print the bandwidth
+            print(f"Bandwidth for Packet {idx}: {bandwidth / 1e6:.2f} MHz")
+
+            
+    else:
+        print(f"Packet {idx}: No suitable band found for offset correction.")
