@@ -1,0 +1,45 @@
+# Assuming the following variables are already defined:
+# - data: The raw signal data
+# - packets: A list of tuples indicating the start and end indices of each packet
+# - processor: An instance of the processor class with methods for frequency offset estimation and correction
+# - sampling_rate: The sampling rate of the signal (in Hz)
+# - lowpass: The low-pass filter function (e.g., scipy.signal.butter or similar)
+
+# Target the second filtered packet (index 1 in zero-based indexing)
+packet_idx =4  # Index of the packet to process
+start_idx, end_idx = packets[packet_idx]  # Extract the start and end indices for the selected packet
+
+# Extract the signal for the specified packet
+current_packet = ocusync3_data[start_idx:end_idx]
+
+# Correct the frequency offset for the packet (assuming offset is calculated previously)
+offset, band_found = processor.estimate_offset(current_packet, sampling_rate, packet_type="droneid")
+
+if band_found:
+    # Apply frequency shift correction using the static method of DroneSignalProcessor
+    corrected_packet = DroneSignalProcessor.fshift(current_packet, -offset, sampling_rate)
+
+    # Apply low-pass filter to the corrected packet (e.g., 8.5 MHz cutoff)
+    filtered_packet, sos = lowpass(corrected_packet, 8.5e6, sampling_rate)
+
+    # Plot the filtered signal in terms of amplitude vs sample number
+    plt.figure(figsize=(10, 6))
+    plt.plot(np.arange(len(filtered_packet)), np.abs(filtered_packet), label="Filtered Signal", color="blue")
+    plt.title(f"Filtered Signal of Packet {packet_idx + 1}")  # Adjust title to 1-based indexing
+    plt.xlabel("Sample Number")  # X-axis: Sample number
+    plt.ylabel("Amplitude")
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+    # Plot the spectrogram for the filtered packet
+    plt.figure(figsize=(10, 6))
+    plt.specgram(filtered_packet, NFFT=256, Fs=sampling_rate, noverlap=128, scale='dB')
+    plt.title(f"Spectrogram of Filtered Packet {packet_idx + 1}")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Frequency [Hz]")
+    plt.colorbar(label="Power/Frequency [dB]")
+    plt.show()
+
+else:
+    print(f"Packet {packet_idx + 1}: No suitable band found for offset correction.")
