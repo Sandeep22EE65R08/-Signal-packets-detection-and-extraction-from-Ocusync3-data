@@ -1,0 +1,83 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+from scipy.signal import find_peaks
+
+class EnvelopeDetector:
+    def __init__(self, signal, sample_rate):
+        self.signal = signal
+        self.sample_rate = sample_rate
+
+    def Inverse_Fourrier_transform(self):
+        """
+        Assuming the signal is in the frequency domain, this method would return
+        the signal in the time domain. For now, it's just returning the original signal
+        if the data is already in time domain.
+        """
+        return self.signal  # Returning the signal (assumed to be in time domain)
+
+    def Get_envelope(self):
+        """
+        Calculates the envelope of the interpolated data (upper and lower envelopes).
+        """
+        # Apply the inverse Fourier transform (if needed)
+        x_long = self.Inverse_Fourrier_transform()
+        
+        # Find peaks and troughs (local maxima and minima)
+        peaks, _ = find_peaks(x_long.squeeze(), height=0)  # Peaks (local maxima)
+        troughs, _ = find_peaks(-x_long.squeeze())         # Troughs (local minima)
+        
+        # Interpolation using cubic splines for upper and lower envelopes
+        u_p = interp1d(peaks, x_long.squeeze()[peaks], kind='cubic', bounds_error=False, fill_value=0.0)
+        l_p = interp1d(troughs, x_long.squeeze()[troughs], kind='cubic', bounds_error=False, fill_value=0.0)
+        
+        # Compute the upper and lower envelopes
+        Upper_envelope = [u_p(i) for i in range(x_long.shape[0])]
+        Lower_envelope = [l_p(i) for i in range(x_long.shape[0])]
+        
+        return peaks, troughs, Upper_envelope, Lower_envelope
+
+
+# Loop through all extracted packets, apply frequency shift correction, and plot amplitude envelope
+for idx, (start_idx, end_idx) in enumerate(packets, start=1):
+    # Extract corresponding signal samples for the packet
+    current_packet = filtered_data[start_idx:end_idx]
+
+    # Correct the frequency offset for the packet
+    offset, band_found = processor.estimate_offset(current_packet, sampling_rate, packet_type="droneid")
+
+    if band_found:
+        # Apply frequency shift correction
+        corrected_packet = DroneSignalProcessor.fshift(current_packet, -offset, sampling_rate)
+
+        # Initialize the EnvelopeDetector object
+        detector = EnvelopeDetector(corrected_packet, sampling_rate)
+
+        # Get the envelope (peaks, troughs, and envelopes)
+        peaks, troughs, Upper_envelope, Lower_envelope = detector.Get_envelope()
+
+        # Generate time axis for plotting
+        time = np.arange(start_idx, end_idx) / sampling_rate  # Adjust time based on the packet's indices
+
+        # Ensure peaks and troughs indices are within bounds
+        valid_peaks = peaks[peaks < len(corrected_packet)]
+        valid_troughs = troughs[troughs < len(corrected_packet)]
+
+        # Plot the signal and its amplitude envelopes
+        plt.figure(figsize=(10, 6))
+        plt.plot(time, corrected_packet, label=f'Signal {idx}', alpha=0.7)
+        plt.plot(time[valid_peaks], corrected_packet[valid_peaks], 'go', label='Peaks')  # Peaks in green
+        #plt.plot(time[valid_troughs], corrected_packet[valid_troughs], 'ro', label='Troughs')  # Troughs in red
+        plt.plot(time, Upper_envelope, color='blue', label='Upper Envelope', linewidth=2)
+        #plt.plot(time, Lower_envelope, color='orange', label='Lower Envelope', linewidth=2)
+
+        # Set plot labels and title
+        plt.title(f"Amplitude Envelope of Corrected Packet {idx}")
+        plt.xlabel("Time [s]")
+        plt.ylabel("Amplitude")
+        plt.legend(loc='upper right')
+        plt.grid(True)
+        plt.show()
+        
+    else:
+        print(f"Packet {idx}: No suitable band found for offset correction.")
