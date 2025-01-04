@@ -1,0 +1,14 @@
+# Step 4: Print the Number of Samples for Each Detected Packet
+print(f"Number of detected packets: {len(packets)}")
+for idx, (start_idx, end_idx) in enumerate(packets, start=1):
+    # Calculate start time, end time, and duration
+    start_time = start_idx / sampling_rate
+    end_time = end_idx / sampling_rate
+    duration = end_time - start_time
+    
+    # Calculate the number of samples in the packet
+    num_samples = end_idx - start_idx  # Number of samples in the packet
+    
+    # Print the details of each packet
+    print(f"Packet {idx}: Start Time = {start_time:.6f} s, End Time = {end_time:.6f} s, "
+          f"Duration = {duration:.6f} s, Number of Samples = {num_samples}")
