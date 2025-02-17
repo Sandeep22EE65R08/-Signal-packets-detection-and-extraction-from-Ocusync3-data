@@ -1,6 +1,6 @@
 # JUPYTER NOTEBOOK
 
-Signal-packets-detection-extraction-and-Analysis-from-Ocusync3-data
+20Mhz Signal-packets-detection-extraction-and-Analysis-from-Ocusync3-data
 Digital Signal Processing for Signal Packet Detection & Analysis
 Project Overview
 
